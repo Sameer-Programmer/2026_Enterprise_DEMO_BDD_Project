@@ -14,7 +14,8 @@ public class Hooks {
 
     @After
     public void tearDown() {
-        System.out.println("===== Test Finished =====");
+        System.out.println("===== Test Finished ======");
+        System.out.println("Test Ended");
         DriverFactory.quitDriver();
     }
 }
