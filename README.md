@@ -52,7 +52,7 @@ The checked-in runner currently selects scenarios tagged `@sanity` and generates
 ```text
 .
 ├── pom.xml
-├── testNg.xml
+├── testng.xml
 ├── jenkinsfile
 ├── reports/
 │   └── Cucumber.html                 # Generated Cucumber report (after a run)
@@ -123,9 +123,9 @@ Supported `browser` values are `chrome`, `firefox`, and `edge`. Set `headless=tr
 mvn clean test
 ```
 
-The intended execution path is Maven Surefire → TestNG suite → `runners.TestRunner`, which filters scenarios with `@sanity`. **Current repository issue:** `pom.xml` refers to `testng.xml`, while the checked-in file is named `testNg.xml`. On case-sensitive filesystems, align the names in the POM or rename the suite file before running Maven; until then, `mvn clean test` may fail before Cucumber starts.
+Maven Surefire loads `testng.xml`, which invokes `runners.TestRunner`; the runner filters scenarios with `@sanity`.
 
-To run from an IDE, use the TestNG suite file `testNg.xml` or the `TestRunner` class, and ensure the working directory is the repository root so that the relative config, `.env`, feature, and report paths resolve correctly.
+To run from an IDE, use the TestNG suite file `testng.xml` or the `TestRunner` class, and ensure the working directory is the repository root so that the relative config, `.env`, feature, and report paths resolve correctly.
 
 ## 🧭 Test coverage
 
@@ -185,7 +185,6 @@ mvn -DskipTests test-compile            # Compile test sources without executing
 
 ## 🛠️ Troubleshooting
 
-- **TestNG suite XML not found:** the POM references `testng.xml`, but the tracked suite file is `testNg.xml` (capital `N`). Make the names match; filenames are case-sensitive on Linux.
 - **Missing `DEV_USERNAME` / `DEV_PASSWORD`:** verify the root `.env` file and exact key names. Do not commit it.
 - **Browser or driver startup error:** confirm the chosen browser is installed and compatible; check network access if Selenium Manager needs to resolve a driver.
 - **Config or feature file not found:** run Maven from the repository root.
