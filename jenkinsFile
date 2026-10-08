@@ -33,8 +33,32 @@ pipeline {
     post {
 
         always {
-            archiveArtifacts artifacts: 'reports/**/*',
-                             allowEmptyArchive: true
+
+            // Store screenshots and other report files
+            archiveArtifacts(
+                artifacts: 'reports/screenshots/**/*',
+                allowEmptyArchive: true
+            )
+
+            // Publish Extent Report
+            publishHTML([
+                allowMissing: true,
+                alwaysLinkToLastBuild: true,
+                keepAll: true,
+                reportDir: 'reports',
+                reportFiles: 'ExtentReport.html',
+                reportName: 'Extent Report'
+            ])
+
+            // Publish Cucumber Report
+            publishHTML([
+                allowMissing: true,
+                alwaysLinkToLastBuild: true,
+                keepAll: true,
+                reportDir: 'reports',
+                reportFiles: 'Cucumber.html',
+                reportName: 'Cucumber Report'
+            ])
         }
 
         success {
