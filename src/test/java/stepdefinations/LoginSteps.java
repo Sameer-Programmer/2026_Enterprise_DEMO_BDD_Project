@@ -12,7 +12,6 @@ public class LoginSteps {
 
     LoginPage loginPage;
     DashboardPage dashboardPage;
-
     Dotenv dotenv = Dotenv.load();
 
     @Given("Launch the Browser")
