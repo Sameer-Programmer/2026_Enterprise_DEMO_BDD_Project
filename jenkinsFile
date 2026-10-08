@@ -10,6 +10,19 @@ pipeline {
             }
         }
 
+        stage('Setup Environment') {
+            steps {
+                withCredentials([
+                    file(
+                        credentialsId: 'project-env',
+                        variable: 'ENV_FILE'
+                    )
+                ]) {
+                    bat 'copy /Y "%ENV_FILE%" ".env"'
+                }
+            }
+        }
+
         stage('Run Tests') {
             steps {
                 bat 'mvn clean test'
