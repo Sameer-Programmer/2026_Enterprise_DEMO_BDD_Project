@@ -38,7 +38,7 @@ public class AddEmployeePage extends BasePage {
 
     public void enterLastName(String lastName) {
         txtLastName.clear();
-        //txtLastName.sendKeys(lastName);
+        txtLastName.sendKeys(lastName);
     }
 
     public void clickSave() {
