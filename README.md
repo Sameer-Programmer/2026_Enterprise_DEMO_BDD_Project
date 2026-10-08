@@ -20,7 +20,7 @@
 
 This repository contains a Java-based browser automation framework for the [OrangeHRM demo application](https://opensource-demo.orangehrmlive.com/). Tests are written as Cucumber feature scenarios and executed with TestNG. Selenium drives the browser, page objects encapsulate UI interactions, and Excel workbooks provide employee and candidate test data.
 
-The checked-in runner currently selects scenarios tagged `@sanity` and generates a Cucumber HTML report at `reports/Cucumber.html`.
+The checked-in runner currently selects scenarios tagged `@smoke` and generates Cucumber and ExtentReports HTML reports at `reports/Cucumber.html` and `reports/ExtentReport.html`. At present, the employee scenario is the only scenario tagged `@smoke`.
 
 > **Demo environment:** These tests interact with a public demo site. Its availability, data state, and behavior are outside this repository's control. Use only non-sensitive test data.
 
@@ -31,7 +31,8 @@ The checked-in runner currently selects scenarios tagged `@sanity` and generates
 - 🌐 **Browser selection** for Chrome, Firefox, or Edge, with optional headless mode.
 - 📊 **Excel-driven test data** for employee and candidate flows.
 - ⏱️ **Explicit and implicit waits** configured through project properties.
-- 📄 **Cucumber HTML report** for scenario results.
+- 📄 **Cucumber and ExtentReports HTML reports** for scenario results.
+- 📸 **Failure screenshots** saved under `reports/screenshots/` and linked from the ExtentReports entry for the failed scenario.
 - 🔐 **Environment-based login credentials** loaded from a local `.env` file.
 
 ## 🧰 Technology stack
@@ -44,7 +45,7 @@ The checked-in runner currently selects scenarios tagged `@sanity` and generates
 | BDD | Cucumber 7.23 (Java + TestNG) |
 | Test assertions / suite | TestNG 7.11 |
 | Spreadsheet data | Apache POI 5.4 |
-| Reporting | Cucumber HTML plugin |
+| Reporting | Cucumber HTML plugin; ExtentReports Spark HTML report |
 | Logging dependencies | Log4j2 |
 
 ## 🗂️ Project layout
@@ -53,17 +54,18 @@ The checked-in runner currently selects scenarios tagged `@sanity` and generates
 .
 ├── pom.xml
 ├── testng.xml
-├── jenkinsfile
 ├── reports/
-│   └── Cucumber.html                 # Generated Cucumber report (after a run)
+│   ├── Cucumber.html                 # Generated Cucumber report (after a run)
+│   ├── ExtentReport.html             # Generated ExtentReports report (after a run)
+│   └── screenshots/                  # Failure screenshots linked from ExtentReports
 └── src/test/
     ├── java/
     │   ├── hooks/                    # Cucumber setup and teardown
+    │   ├── listeners/                # TestNG listener that flushes ExtentReports
     │   ├── pages/                    # Page objects and UI actions
     │   ├── runners/                  # Cucumber + TestNG runner
     │   ├── stepdefinations/          # Gherkin step implementations
-    │   ├── testbase/                  # Shared test base
-    │   └── utils/                    # Driver, config, waits, Excel, screenshots
+    │   └── utils/                    # Driver, config, waits, Excel, screenshots, reporting
     └── resources/
         ├── config/config.properties  # Environment, browser, waits
         ├── features/                 # Login, Employee, Candidate scenarios
@@ -123,7 +125,7 @@ Supported `browser` values are `chrome`, `firefox`, and `edge`. Set `headless=tr
 mvn clean test
 ```
 
-Maven Surefire loads `testng.xml`, which invokes `runners.TestRunner`; the runner filters scenarios with `@sanity`.
+Maven Surefire loads `testng.xml`, which invokes `runners.TestRunner`; the runner filters scenarios with `@smoke`. Currently, this runs the `Add a new employee` scenario. The login and candidate scenarios are tagged `@sanity` only, so they are not included by the current runner filter.
 
 To run from an IDE, use the TestNG suite file `testng.xml` or the `TestRunner` class, and ensure the working directory is the repository root so that the relative config, `.env`, feature, and report paths resolve correctly.
 
@@ -135,7 +137,7 @@ To run from an IDE, use the TestNG suite file `testng.xml` or the `TestRunner` c
 | `Employee.feature` | 1 | Sign in, add an employee, and verify the employee details page |
 | `Candidate.feature` | 1 | Sign in, create a candidate, then search and verify the candidate |
 
-All four scenarios are currently tagged `@sanity`. Candidate and employee records are created in the shared demo application, so repeated runs may encounter pre-existing records or environment-specific validation behavior.
+There are four scenarios across the feature files: all four are tagged `@sanity`, and the employee scenario is additionally tagged `@smoke`. Because the runner filter is currently `@smoke`, only the employee scenario is selected by `mvn clean test`. Candidate and employee records are created in the shared demo application, so repeated runs may encounter pre-existing records or environment-specific validation behavior.
 
 ## 🔄 Execution flow
 
@@ -144,7 +146,7 @@ flowchart TD
     A[Run mvn clean test] --> B[Maven Surefire]
     B --> C[TestNG suite: testng.xml]
     C --> D[Cucumber TestRunner]
-    D --> E[Select @sanity scenarios]
+    D --> E[Select @smoke scenarios]
     E --> F[Before hook: initialize WebDriver]
     F --> G[Gherkin steps]
     G --> H[Step definitions]
@@ -152,8 +154,9 @@ flowchart TD
     I --> J[Selenium WebDriver]
     J --> K[OrangeHRM demo site]
     K --> L[Assertions and scenario outcome]
-    L --> M[After hook: quit WebDriver]
-    M --> N[reports/Cucumber.html]
+    L --> M[After hook: log result and capture failure screenshot]
+    M --> N[Quit WebDriver]
+    N --> O[Cucumber and ExtentReports HTML reports]
 ```
 
 ## 🏛️ Framework architecture
@@ -170,16 +173,18 @@ flowchart LR
     Driver --> WebDriver[Selenium WebDriver]
     WebDriver --> AUT[OrangeHRM web application]
     Runner --> Report[Cucumber HTML report]
+    Hooks --> Extent[ExtentReports scenario result and failure screenshot]
+    Listener[TestNG listener flushes report] --> Extent
 ```
 
 ## 📈 Reports and artifacts
 
-After a successful or failed test run, open **`reports/Cucumber.html`** in a browser to review scenario status and step details. The runner configures Cucumber's built-in HTML formatter (`html:reports/Cucumber.html`). The report is generated by the test run; rerunning tests replaces the report at that path.
+After a test run, open **`reports/Cucumber.html`** for Cucumber scenario status and step details, or **`reports/ExtentReport.html`** for the ExtentReports execution report. The TestNG listener flushes the ExtentReports output when the suite finishes. Both reports are regenerated at their respective paths on subsequent runs. When a scenario fails, the Cucumber `@After` hook saves a timestamped PNG screenshot in **`reports/screenshots/`** and adds it to the failed scenario entry in the ExtentReports report.
 
 ## ⚙️ Useful commands
 
 ```bash
-mvn clean test                         # Run the configured @sanity suite
+mvn clean test                         # Run the configured @smoke suite (currently the employee scenario)
 mvn -DskipTests test-compile            # Compile test sources without executing browser tests
 ```
 
@@ -189,14 +194,14 @@ mvn -DskipTests test-compile            # Compile test sources without executing
 - **Browser or driver startup error:** confirm the chosen browser is installed and compatible; check network access if Selenium Manager needs to resolve a driver.
 - **Config or feature file not found:** run Maven from the repository root.
 - **Flaky demo-site behavior:** the public demo may be slow, unavailable, or have changing application data. Retry only after checking the site and test-data state.
-- **Unexpected test selection:** the runner currently hard-codes `tags = "@sanity"`; update `src/test/java/runners/TestRunner.java` if you intend to change the suite filter.
+- **Unexpected test selection:** the runner currently hard-codes `tags = "@smoke"`; update `src/test/java/runners/TestRunner.java` if you intend to change the suite filter. Add the desired tag to feature scenarios if they should be selected by that filter.
 
 ## 🤝 Contributing
 
 1. Create or update a `.feature` file with readable, outcome-focused scenarios.
 2. Implement the scenario steps and reuse or add page objects rather than placing locators in feature files.
 3. Keep credentials out of source control; use local environment configuration.
-4. Run `mvn clean test` and inspect the generated HTML report before opening a pull request.
+4. Run `mvn clean test` and inspect `reports/Cucumber.html` and `reports/ExtentReport.html` before opening a pull request.
 
 ---
 
