@@ -42,6 +42,11 @@ public class LoginSteps {
 
         dashboardPage =
                 new DashboardPage(DriverFactory.getDriver());
+
+        Assert.assertTrue(
+                dashboardPage.isDashboardDisplayed(),
+                "Dashboard is not displayed after login"
+        );
     }
 
     @Then("Dashboard should be displayed")

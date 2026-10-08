@@ -9,7 +9,7 @@ import org.testng.annotations.Listeners;
 @CucumberOptions(
         features = "src/test/resources/features",
         glue = {"stepdefinations", "hooks"},
-        tags = "@sanity",
+        tags = "@work1",
         plugin = {"pretty", "html:reports/Cucumber.html"},
         monochrome = true
 )

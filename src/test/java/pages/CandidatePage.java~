@@ -38,13 +38,11 @@ public class CandidatePage extends BasePage {
 
     public void clickRecruitment() {
 
-        try {
+        if (recruitmentMenu.isDisplayed()) {
 
-            waitHelper
-                    .waitForElementClickable(recruitmentMenu)
-                    .click();
+            recruitmentMenu.click();
 
-        } catch (Exception e) {
+        } else {
 
             waitHelper
                     .waitForElementClickable(menuButton)

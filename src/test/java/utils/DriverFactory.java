@@ -38,6 +38,7 @@ public class DriverFactory {
 
                 if (isHeadless) {
                     chromeOptions.addArguments("--headless=new");
+                    chromeOptions.addArguments("--window-size=1920,1080");
                 }
 
                 driver = new ChromeDriver(chromeOptions);
@@ -51,6 +52,8 @@ public class DriverFactory {
 
                 if (isHeadless) {
                     firefoxOptions.addArguments("-headless");
+                    firefoxOptions.addArguments("--width=1920");
+                    firefoxOptions.addArguments("--height=1080");
                 }
 
                 driver = new FirefoxDriver(firefoxOptions);
@@ -64,6 +67,7 @@ public class DriverFactory {
 
                 if (isHeadless) {
                     edgeOptions.addArguments("--headless=new");
+                    edgeOptions.addArguments("--window-size=1920,1080");
                 }
 
                 driver = new EdgeDriver(edgeOptions);
@@ -89,7 +93,7 @@ public class DriverFactory {
         // Delete all cookies
         driver.manage().deleteAllCookies();
 
-        // Maximize browser
+        // Set browser window size
         driver.manage().window().maximize();
     }
 
