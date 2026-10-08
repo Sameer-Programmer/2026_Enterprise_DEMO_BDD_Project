@@ -10,9 +10,7 @@ public class Hooks {
 
     @Before
     public void setUp() {
-
         System.out.println("===== Test Started =====");
-
         DriverFactory.initializeDriver();
     }
 
@@ -20,13 +18,10 @@ public class Hooks {
     public void tearDown(Scenario scenario) {
 
         System.out.println("===== Test Finished =====");
-
         if (scenario.isFailed()) {
-
             System.out.println(
                     "Scenario Failed: " + scenario.getName()
             );
-
             String screenshotName =
                     scenario.getName()
                             .replaceAll("[^a-zA-Z0-9]", "_")
@@ -36,7 +31,6 @@ public class Hooks {
         }
 
         DriverFactory.quitDriver();
-
         System.out.println("Test Ended");
     }
 }
