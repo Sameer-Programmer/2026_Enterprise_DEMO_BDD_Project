@@ -20,7 +20,7 @@
 
 This repository contains a Java-based browser automation framework for the [OrangeHRM demo application](https://opensource-demo.orangehrmlive.com/). Tests are written as Cucumber feature scenarios and executed with TestNG. Selenium drives the browser, page objects encapsulate UI interactions, and Excel workbooks provide employee and candidate test data.
 
-The checked-in runner currently selects scenarios tagged `@smoke` and generates Cucumber and ExtentReports HTML reports at `reports/Cucumber.html` and `reports/ExtentReport.html`. At present, the employee scenario is the only scenario tagged `@smoke`.
+The checked-in runner selects scenarios tagged `@sanity` and generates Cucumber and ExtentReports HTML reports at `reports/Cucumber.html` and `reports/ExtentReport.html`. All four scenarios in the feature files currently carry the `@sanity` tag, so `mvn clean test` selects all four.
 
 > **Demo environment:** These tests interact with a public demo site. Its availability, data state, and behavior are outside this repository's control. Use only non-sensitive test data.
 
@@ -32,6 +32,7 @@ The checked-in runner currently selects scenarios tagged `@smoke` and generates 
 - 📊 **Excel-driven test data** for employee and candidate flows.
 - ⏱️ **Explicit and implicit waits** configured through project properties.
 - 📄 **Cucumber and ExtentReports HTML reports** for scenario results.
+- 🏗️ **Jenkins pipeline** for checkout, secure environment-file setup, test execution, and report/screenshot archiving.
 - 📸 **Failure screenshots** saved under `reports/screenshots/` and linked from the ExtentReports entry for the failed scenario.
 - 🔐 **Environment-based login credentials** loaded from a local `.env` file.
 
@@ -54,6 +55,7 @@ The checked-in runner currently selects scenarios tagged `@smoke` and generates 
 .
 ├── pom.xml
 ├── testng.xml
+├── jenkinsFile                       # Jenkins pipeline (lowercase filename)
 ├── reports/
 │   ├── Cucumber.html                 # Generated Cucumber report (after a run)
 │   ├── ExtentReport.html             # Generated ExtentReports report (after a run)
@@ -125,9 +127,14 @@ Supported `browser` values are `chrome`, `firefox`, and `edge`. Set `headless=tr
 mvn clean test
 ```
 
-Maven Surefire loads `testng.xml`, which invokes `runners.TestRunner`; the runner filters scenarios with `@smoke`. Currently, this runs the `Add a new employee` scenario. The login and candidate scenarios are tagged `@sanity` only, so they are not included by the current runner filter.
+Maven Surefire loads `testng.xml`, which invokes `runners.TestRunner`; the runner filters scenarios with `@sanity`. All four scenarios currently have this tag, so the run includes both login scenarios, employee creation, and candidate creation/search.
 
 To run from an IDE, use the TestNG suite file `testng.xml` or the `TestRunner` class, and ensure the working directory is the repository root so that the relative config, `.env`, feature, and report paths resolve correctly.
+
+### Jenkins pipeline
+The repository includes a declarative pipeline in **`jenkinsFile`** (lowercase `j`). Configure the Jenkins Pipeline job to use this file as its script path. The pipeline checks out the branch, retrieves a Jenkins **Secret file** credential with ID `project-env` and copies it to the workspace as `.env`, then runs `mvn clean test`. It archives failure screenshots and publishes the Cucumber and ExtentReports HTML reports using the Jenkins HTML Publisher plugin.
+
+The current pipeline uses Windows `bat` steps, so the Jenkins agent must be a Windows node with JDK 21, Maven, a supported browser, and access to the OrangeHRM demo site. Add the HTML Publisher plugin and configure the `project-env` credential as a secret file containing `DEV_USERNAME` and `DEV_PASSWORD`. Keep that credential out of source control.
 
 ## 🧭 Test coverage
 
@@ -137,7 +144,7 @@ To run from an IDE, use the TestNG suite file `testng.xml` or the `TestRunner` c
 | `Employee.feature` | 1 | Sign in, add an employee, and verify the employee details page |
 | `Candidate.feature` | 1 | Sign in, create a candidate, then search and verify the candidate |
 
-There are four scenarios across the feature files: all four are tagged `@sanity`, and the employee scenario is additionally tagged `@smoke`. Because the runner filter is currently `@smoke`, only the employee scenario is selected by `mvn clean test`. Candidate and employee records are created in the shared demo application, so repeated runs may encounter pre-existing records or environment-specific validation behavior.
+All four scenarios are tagged `@sanity`, matching the runner filter, so all four are selected by `mvn clean test`. Candidate and employee records are created in the shared demo application, so repeated runs may encounter pre-existing records or environment-specific validation behavior.
 
 ## 🔄 Execution flow
 
@@ -146,7 +153,7 @@ flowchart TD
     A[Run mvn clean test] --> B[Maven Surefire]
     B --> C[TestNG suite: testng.xml]
     C --> D[Cucumber TestRunner]
-    D --> E[Select @smoke scenarios]
+    D --> E[Select @sanity scenarios]
     E --> F[Before hook: initialize WebDriver]
     F --> G[Gherkin steps]
     G --> H[Step definitions]
@@ -184,7 +191,7 @@ After a test run, open **`reports/Cucumber.html`** for Cucumber scenario status 
 ## ⚙️ Useful commands
 
 ```bash
-mvn clean test                         # Run the configured @smoke suite (currently the employee scenario)
+mvn clean test                         # Run all scenarios tagged @sanity (currently four)
 mvn -DskipTests test-compile            # Compile test sources without executing browser tests
 ```
 
@@ -194,7 +201,7 @@ mvn -DskipTests test-compile            # Compile test sources without executing
 - **Browser or driver startup error:** confirm the chosen browser is installed and compatible; check network access if Selenium Manager needs to resolve a driver.
 - **Config or feature file not found:** run Maven from the repository root.
 - **Flaky demo-site behavior:** the public demo may be slow, unavailable, or have changing application data. Retry only after checking the site and test-data state.
-- **Unexpected test selection:** the runner currently hard-codes `tags = "@smoke"`; update `src/test/java/runners/TestRunner.java` if you intend to change the suite filter. Add the desired tag to feature scenarios if they should be selected by that filter.
+- **Unexpected test selection:** the runner currently hard-codes `tags = "@sanity"`; update `src/test/java/runners/TestRunner.java` if you intend to change the suite filter. Add the desired tag to feature scenarios if they should be selected by that filter.
 
 ## 🤝 Contributing
 
