@@ -1,6 +1,6 @@
 Feature: Employee Management
 
-  @sanity @smoke
+  @sanity
   Scenario: Add a new employee
     Given Launch the Browser
     When Navigate to the OrangeHRM login page
