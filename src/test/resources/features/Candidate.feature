@@ -1,6 +1,6 @@
 Feature: Candidate Management
 
-  @work
+  @sanity
   Scenario: Create and search for a candidate
 
     Given Launch the Browser
