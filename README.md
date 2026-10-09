@@ -147,30 +147,46 @@ The current pipeline uses Windows `bat` steps, so the Jenkins agent must be a Wi
 All four scenarios are tagged `@sanity`, matching the runner filter, so all four are selected by `mvn clean test`. Candidate and employee records are created in the shared demo application, so repeated runs may encounter pre-existing records or environment-specific validation behavior.
 
 ## 🔄 Execution flow
-
 ```mermaid
 flowchart TD
-    A[Run mvn clean test] --> B[Maven Surefire]
-    B --> C[TestNG suite: testng.xml]
-    C --> D[Cucumber TestRunner]
-    D --> E[Select @sanity scenarios]
-    E --> F[Before hook: initialize WebDriver]
-    F --> G[Gherkin steps]
-    G --> H[Step definitions]
-    H --> I[Page objects]
-    I --> J[Selenium WebDriver]
-    J --> K[OrangeHRM demo site]
-    K --> L[Assertions and scenario outcome]
-    L --> M[After hook: log result and capture failure screenshot]
-    M --> N[Quit WebDriver]
-    N --> O[Cucumber and ExtentReports HTML reports]
+    Local[Local or IDE: mvn clean test] --> Surefire[Maven Surefire]
+    subgraph CI[Jenkins CI pipeline: jenkinsFile]
+        Trigger[Jenkins job starts] --> Checkout[Checkout configured branch]
+        Checkout --> Env[Load project-env Secret file as .env]
+        Env --> JenkinsTest[Run mvn clean test on Windows agent]
+    end
+    JenkinsTest --> Surefire
+    Surefire --> TestNG[TestNG suite: testng.xml]
+    TestNG --> Runner[Cucumber TestRunner]
+    Runner --> Tags[Select @sanity scenarios]
+    Tags --> Hooks[Before hook: initialize WebDriver]
+    Hooks --> Steps[Gherkin steps and step definitions]
+    Steps --> Pages[Page objects and test data]
+    Pages --> Browser[Selenium WebDriver]
+    Browser --> App[OrangeHRM demo site]
+    App --> Outcome[Assertions and scenario outcome]
+    Outcome --> After[After hook: log result and capture failure screenshot]
+    After --> Quit[Quit WebDriver]
+    Quit --> Reports[Generate Cucumber and ExtentReports HTML]
+    Reports --> Archive[Jenkins: archive screenshots and publish both HTML reports]
 ```
 
 ## 🏛️ Framework architecture
-
 ```mermaid
 flowchart LR
-    Feature[Feature files<br/>Gherkin] --> Runner[Cucumber TestNG runner]
+    subgraph Delivery[CI and execution]
+        Repo[Git branch / checkout] --> Pipeline[jenkinsFile: Jenkins pipeline]
+        Pipeline --> Secrets[Jenkins Secret file: project-env]
+        Secrets --> Dotenv[Workspace .env]
+        Pipeline --> Maven[Maven clean test]
+        Local[Local or IDE run] --> Maven
+        Pipeline --> Archive[Archive failure screenshots]
+        Pipeline --> Publish[Publish Cucumber and ExtentReports]
+    end
+    Maven --> Surefire[Maven Surefire]
+    Surefire --> Suite[TestNG suite: testng.xml]
+    Suite --> Runner[Cucumber TestRunner: @sanity]
+    Feature[Feature files / Gherkin] --> Runner
     Runner --> Steps[Step definitions]
     Hooks[Cucumber hooks] --> Driver[DriverFactory]
     Steps --> Pages[Page Object Model]
@@ -179,9 +195,14 @@ flowchart LR
     Pages --> Driver
     Driver --> WebDriver[Selenium WebDriver]
     WebDriver --> AUT[OrangeHRM web application]
-    Runner --> Report[Cucumber HTML report]
+    Runner --> CucumberReport[Cucumber HTML report]
     Hooks --> Extent[ExtentReports scenario result and failure screenshot]
     Listener[TestNG listener flushes report] --> Extent
+    CucumberReport --> Publish
+    Extent --> Publish
+    Hooks --> Screenshots[reports/screenshots]
+    Screenshots --> Archive
+    Dotenv -. credentials read by tests .-> Steps
 ```
 
 ## 📈 Reports and artifacts
