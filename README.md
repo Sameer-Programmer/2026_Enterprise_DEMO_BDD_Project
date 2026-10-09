@@ -20,7 +20,7 @@
 
 This repository contains a Java-based browser automation framework for the [OrangeHRM demo application](https://opensource-demo.orangehrmlive.com/). Tests are written as Cucumber feature scenarios and executed with TestNG. Selenium drives the browser, page objects encapsulate UI interactions, and Excel workbooks provide employee and candidate test data.
 
-The checked-in runner filters for `@smoke` and generates a Cucumber HTML report at `reports/Cucumber.html`. Currently, no feature scenario has the `@smoke` tag, so the configured run selects no scenarios until the runner filter or feature tags are aligned.
+The checked-in runner filters for `@smoke` and generates a Cucumber HTML report at `reports/Cucumber.html`. The employee scenario is tagged `@smoke`, so it is selected by the configured run; the other scenarios remain `@sanity` only.
 
 > **Demo environment:** These tests interact with a public demo site. Its availability, data state, and behavior are outside this repository's control. Use only non-sensitive test data.
 
@@ -124,7 +124,7 @@ Supported `browser` values are `chrome`, `firefox`, and `edge`. Set `headless=tr
 mvn clean test
 ```
 
-Maven Surefire loads `testng.xml`, which invokes `runners.TestRunner`; the runner filters scenarios with `@smoke`. In the current branch, all four scenarios are tagged `@sanity` and none has `@smoke`, so `mvn clean test` selects no scenarios. To run a scenario, either add `@smoke` to the intended feature scenario (for example, the employee scenario) or change the runner filter to a tag used by the features, such as `@sanity`.
+Maven Surefire loads `testng.xml`, which invokes `runners.TestRunner`; the runner filters scenarios with `@smoke`. All four scenarios are tagged `@sanity`, and the employee scenario is additionally tagged `@smoke`, so `mvn clean test` selects the `Add a new employee` scenario. To change the smoke-test selection, add or remove `@smoke` on the intended feature scenarios or update the runner filter.
 
 To run from an IDE, use the TestNG suite file `testng.xml` or the `TestRunner` class, and ensure the working directory is the repository root so that the relative config, `.env`, feature, and report paths resolve correctly.
 
@@ -139,7 +139,7 @@ This `master` branch does **not** currently contain a Jenkins pipeline file. The
 | `Employee.feature` | 1 | Sign in, add an employee, and verify the employee details page |
 | `Candidate.feature` | 1 | Sign in, create a candidate, then search and verify the candidate |
 
-There are four scenarios across the feature files, and all four are tagged `@sanity`. None is currently tagged `@smoke`, although `TestRunner` filters for `@smoke`; therefore the runner currently selects zero scenarios. Align the runner tag and feature tags before expecting the suite to exercise the application. Candidate and employee records are created in the shared demo application, so repeated runs may encounter pre-existing records or environment-specific validation behavior.
+There are four scenarios across the feature files, and all four are tagged `@sanity`. The employee scenario is additionally tagged `@smoke`, matching the runner filter, so it is the only scenario selected by `mvn clean test`. Candidate and employee records are created in the shared demo application, so repeated runs may encounter pre-existing records or environment-specific validation behavior.
 
 ## 🔄 Execution flow
 
@@ -148,19 +148,16 @@ flowchart TD
     A[Run mvn clean test] --> B[Maven Surefire]
     B --> C[TestNG suite: testng.xml]
     C --> D[Cucumber TestRunner]
-    D --> E[Select @smoke scenarios]
-    E --> F{Any matching scenarios?}
-    F -->|No: current state| G[No scenario steps run]
-    F -->|Yes| H[Before hook: initialize WebDriver]
-    H --> I[Gherkin steps and step definitions]
-    I --> J[Page objects]
-    J --> K[Selenium WebDriver]
-    K --> L[OrangeHRM demo site]
-    L --> M[Assertions and scenario outcome]
-    M --> N[After hook: capture screenshot if failed]
-    N --> O[Quit WebDriver]
-    G --> P[reports/Cucumber.html]
-    O --> Q[reports/Cucumber.html and reports/screenshots/]
+    D --> E[Select @smoke scenarios: employee scenario]
+    E --> F[Before hook: initialize WebDriver]
+    F --> G[Gherkin steps and step definitions]
+    G --> H[Page objects]
+    H --> I[Selenium WebDriver]
+    I --> J[OrangeHRM demo site]
+    J --> K[Assertions and scenario outcome]
+    K --> L[After hook: capture screenshot if failed]
+    L --> M[Quit WebDriver]
+    M --> N[reports/Cucumber.html and reports/screenshots/]
 ```
 
 ## 🏛️ Framework architecture
@@ -186,7 +183,7 @@ After a successful or failed test run, open **`reports/Cucumber.html`** in a bro
 ## ⚙️ Useful commands
 
 ```bash
-mvn clean test                         # Runner uses @smoke; currently no feature scenario matches
+mvn clean test                         # Run the @smoke employee scenario
 mvn -DskipTests test-compile            # Compile test sources without executing browser tests
 ```
 
@@ -196,7 +193,7 @@ mvn -DskipTests test-compile            # Compile test sources without executing
 - **Browser or driver startup error:** confirm the chosen browser is installed and compatible; check network access if Selenium Manager needs to resolve a driver.
 - **Config or feature file not found:** run Maven from the repository root.
 - **Flaky demo-site behavior:** the public demo may be slow, unavailable, or have changing application data. Retry only after checking the site and test-data state.
-- **No scenarios selected:** the runner currently hard-codes `tags = "@smoke"`, but current features use `@sanity`. Add `@smoke` to scenarios intended for the smoke suite, or update `src/test/java/runners/TestRunner.java` to a tag that is present.
+- **Unexpected scenario selection:** the runner currently hard-codes `tags = "@smoke"`. The employee scenario carries this tag and is selected; add or remove `@smoke` on feature scenarios to adjust the smoke suite.
 
 ## 🤝 Contributing
 
