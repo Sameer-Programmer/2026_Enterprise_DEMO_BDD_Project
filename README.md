@@ -132,9 +132,23 @@ Maven Surefire loads `testng.xml`, which invokes `runners.TestRunner`; the runne
 To run from an IDE, use the TestNG suite file `testng.xml` or the `TestRunner` class, and ensure the working directory is the repository root so that the relative config, `.env`, feature, and report paths resolve correctly.
 
 ### Jenkins pipeline
-The repository includes a declarative pipeline in **`jenkinsFile`** (lowercase `j`). Configure the Jenkins Pipeline job to use this file as its script path. The pipeline checks out the branch, retrieves a Jenkins **Secret file** credential with ID `project-env` and copies it to the workspace as `.env`, then runs `mvn clean test`. It archives failure screenshots and publishes the Cucumber and ExtentReports HTML reports using the Jenkins HTML Publisher plugin.
+The root-level **`jenkinsFile`** (lowercase `j`, uppercase `F`) defines the Jenkins pipeline on `featureBranch3Jenkins`. The job is configured as a Pipeline job that loads this file from source control.
 
-The current pipeline uses Windows `bat` steps, so the Jenkins agent must be a Windows node with JDK 21, Maven, a supported browser, and access to the OrangeHRM demo site. Add the HTML Publisher plugin and configure the `project-env` credential as a secret file containing `DEV_USERNAME` and `DEV_PASSWORD`. Keep that credential out of source control.
+#### Jenkins job configuration
+1. In Jenkins, select **New Item**, enter a job name, choose **Pipeline**, and select **OK**.
+2. Under **Pipeline**, set **Definition** to **Pipeline script from SCM**, **SCM** to **Git**, and **Repository URL** to [`https://github.com/Sameer-Programmer/2026_Enterprise_DEMO_BDD_Project`](https://github.com/Sameer-Programmer/2026_Enterprise_DEMO_BDD_Project).
+3. Set **Branches to build** to `*/featureBranch3Jenkins` and **Script Path** to `jenkinsFile`. Preserve the exact capitalization; the path is not the conventional `Jenkinsfile`.
+4. Save the job. If the repository requires authentication, select the appropriate Jenkins Git credentials.
+
+#### Agent, credentials, and plugins
+- The pipeline uses Windows `bat` commands (`copy` and `mvn`), so it must run on a Windows Jenkins agent with JDK 21, Maven, a supported browser such as Chrome, and access to the OrangeHRM demo site. With multiple agents, ensure the job is restricted to or otherwise scheduled on a Windows node.
+- Add a Jenkins **Secret file** credential with ID **`project-env`**. The file should define `DEV_USERNAME` and `DEV_PASSWORD`; the pipeline copies it into the workspace as `.env`. Never commit this file or the credentials.
+- Install the Jenkins **HTML Publisher** plugin so the Cucumber and ExtentReports reports can be published.
+
+#### What the pipeline does
+The pipeline checks out the selected SCM branch, writes the `project-env` Secret file to `.env`, and runs **`mvn clean test`**. Maven Surefire loads `testng.xml` and runs the Cucumber/TestNG runner, which currently selects the four `@sanity` scenarios. In the `post` section, Jenkins archives files under `reports/screenshots/` and publishes `reports/Cucumber.html` and `reports/ExtentReport.html`, even when the test stage fails. The pipeline prints a success or failure message based on the build result.
+
+To run manually, open the job and choose **Build Now**. Open that build's **Console Output** to follow checkout, credential setup, test execution, and report publication. Jenkins checks out the configured branch at build time, so commit and push changes to `featureBranch3Jenkins` before building. A GitHub webhook or other automatic trigger can be configured separately; it is not configured by this pipeline file itself.
 
 ## 🧭 Test coverage
 
@@ -150,7 +164,7 @@ All four scenarios are tagged `@sanity`, matching the runner filter, so all four
 ```mermaid
 flowchart TD
     Local[Local or IDE: mvn clean test] --> Surefire[Maven Surefire]
-    subgraph CI[Jenkins CI pipeline: jenkinsFile]
+    subgraph CI[Jenkins Pipeline from SCM: featureBranch3Jenkins / jenkinsFile]
         Trigger[Jenkins job starts] --> Checkout[Checkout configured branch]
         Checkout --> Env[Load project-env Secret file as .env]
         Env --> JenkinsTest[Run mvn clean test on Windows agent]
@@ -175,8 +189,8 @@ flowchart TD
 ```mermaid
 flowchart LR
     subgraph Delivery[CI and execution]
-        Repo[Git branch / checkout] --> Pipeline[jenkinsFile: Jenkins pipeline]
-        Pipeline --> Secrets[Jenkins Secret file: project-env]
+        Repo[GitHub: featureBranch3Jenkins] --> Pipeline[Jenkins Pipeline from SCM: jenkinsFile]
+        Pipeline --> Secrets[Jenkins Secret file credential: project-env]
         Secrets --> Dotenv[Workspace .env]
         Pipeline --> Maven[Maven clean test]
         Local[Local or IDE run] --> Maven
