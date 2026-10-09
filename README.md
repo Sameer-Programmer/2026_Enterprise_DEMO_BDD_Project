@@ -54,10 +54,10 @@ The checked-in runner currently selects scenarios tagged `@smoke` and generates 
 .
 ├── pom.xml
 ├── testng.xml
-├── jenkinsfile
 ├── reports/
 │   ├── Cucumber.html                 # Generated Cucumber report (after a run)
 │   └── screenshots/                  # Timestamped screenshots for failed scenarios
+├── UserNotes/                         # Notes on hooks and the TestNG runner
 └── src/test/
     ├── java/
     │   ├── hooks/                    # Cucumber setup and teardown
@@ -129,6 +129,9 @@ Maven Surefire loads `testng.xml`, which invokes `runners.TestRunner`; the runne
 
 To run from an IDE, use the TestNG suite file `testng.xml` or the `TestRunner` class, and ensure the working directory is the repository root so that the relative config, `.env`, feature, and report paths resolve correctly.
 
+## 🏗️ Jenkins status on `master`
+This `master` branch does **not** currently contain a Jenkins pipeline file. The previously tracked empty `jenkinsfile` was removed in commit `570a081`, so a Jenkins job may still run if its pipeline is configured externally or sourced from another branch, but the pipeline definition is not versioned on `master`. The Jenkins pipeline code is available on `featureBranch3Jenkins` as `jenkinsFile`; merge or add that definition to `master` if you want the pipeline to be maintained in this branch.
+
 ## 🧭 Test coverage
 
 | Feature file | Current scenarios | Main workflow |
@@ -154,8 +157,9 @@ flowchart TD
     I --> J[Selenium WebDriver]
     J --> K[OrangeHRM demo site]
     K --> L[Assertions and scenario outcome]
-    L --> M[After hook: quit WebDriver]
-    M --> N[reports/Cucumber.html; failure screenshots in reports/screenshots/]
+    L --> M[After hook: capture screenshot if failed]
+    M --> N[Quit WebDriver]
+    N --> O[reports/Cucumber.html and reports/screenshots/]
 ```
 
 ## 🏛️ Framework architecture
