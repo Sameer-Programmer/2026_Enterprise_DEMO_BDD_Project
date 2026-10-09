@@ -64,7 +64,6 @@ The checked-in runner currently selects scenarios tagged `@smoke` and generates 
     │   ├── pages/                    # Page objects and UI actions
     │   ├── runners/                  # Cucumber + TestNG runner
     │   ├── stepdefinations/          # Gherkin step implementations
-    │   ├── testbase/                  # Shared test base
     │   └── utils/                    # Driver, config, waits, Excel, screenshots
     └── resources/
         ├── config/config.properties  # Environment, browser, waits
