@@ -1,5 +1,6 @@
 package utils;
 
+import org.openqa.selenium.Dimension;                       // ADDED
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
@@ -26,19 +27,20 @@ public class DriverFactory {
             browser = "chrome";
         }
 
-        boolean isHeadless =
-                Boolean.parseBoolean(headless);
+        boolean isHeadless = Boolean.parseBoolean(headless);
 
         switch (browser.toLowerCase()) {
 
             case "chrome":
 
-                ChromeOptions chromeOptions =
-                        new ChromeOptions();
+                ChromeOptions chromeOptions = new ChromeOptions();
 
                 if (isHeadless) {
                     chromeOptions.addArguments("--headless=new");
                     chromeOptions.addArguments("--window-size=1920,1080");
+                    chromeOptions.addArguments("--no-sandbox");              // ADDED (CI/Linux)
+                    chromeOptions.addArguments("--disable-dev-shm-usage");   // ADDED (CI/Linux)
+                    chromeOptions.addArguments("--disable-gpu");             // ADDED
                 }
 
                 driver = new ChromeDriver(chromeOptions);
@@ -47,8 +49,7 @@ public class DriverFactory {
 
             case "firefox":
 
-                FirefoxOptions firefoxOptions =
-                        new FirefoxOptions();
+                FirefoxOptions firefoxOptions = new FirefoxOptions();
 
                 if (isHeadless) {
                     firefoxOptions.addArguments("-headless");
@@ -62,12 +63,14 @@ public class DriverFactory {
 
             case "edge":
 
-                EdgeOptions edgeOptions =
-                        new EdgeOptions();
+                EdgeOptions edgeOptions = new EdgeOptions();
 
                 if (isHeadless) {
                     edgeOptions.addArguments("--headless=new");
                     edgeOptions.addArguments("--window-size=1920,1080");
+                    edgeOptions.addArguments("--no-sandbox");                // ADDED (CI/Linux)
+                    edgeOptions.addArguments("--disable-dev-shm-usage");     // ADDED (CI/Linux)
+                    edgeOptions.addArguments("--disable-gpu");               // ADDED
                 }
 
                 driver = new EdgeDriver(edgeOptions);
@@ -93,8 +96,13 @@ public class DriverFactory {
         // Delete all cookies
         driver.manage().deleteAllCookies();
 
-        // Set browser window size
-        driver.manage().window().maximize();
+        // CHANGED: maximize() can shrink the window in headless mode,
+        // so set the size explicitly there and maximize only when headed
+        if (isHeadless) {
+            driver.manage().window().setSize(new Dimension(1920, 1080));
+        } else {
+            driver.manage().window().maximize();
+        }
     }
 
     public static WebDriver getDriver() {

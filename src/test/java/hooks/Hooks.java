@@ -17,6 +17,9 @@ public class Hooks {
         System.out.println("===== Test Started =====");
 
         DriverFactory.initializeDriver();
+        // CHANGED: use DriverFactory.getDriver() instead of undefined "driver"
+        System.out.println("Window size: "
+                + DriverFactory.getDriver().manage().window().getSize());
 
         // Create Extent test using Cucumber scenario name
         ExtentReportManager.startTest(
